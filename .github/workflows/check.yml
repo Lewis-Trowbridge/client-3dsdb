@@ -9,7 +9,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Run tests
-        run: cargo test
+        run: cargo test --all-features
 
   lint:
     runs-on: ubuntu-latest
