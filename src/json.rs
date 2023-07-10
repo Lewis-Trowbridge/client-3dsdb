@@ -18,7 +18,7 @@ impl fmt::Display for Region {
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-struct Release {
+pub struct Release {
     #[serde(alias = "Name")]
     name: String,
     #[serde(alias = "UID")]
@@ -35,7 +35,7 @@ struct Release {
     publisher: String
 }
 
-fn get_releases(region: Region) -> Vec<Release> {
+pub fn get_releases(region: Region) -> Vec<Release> {
     let request = ureq::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).call().unwrap();
     serde_json::from_reader(request.into_reader()).unwrap()
 }
