@@ -1,11 +1,11 @@
-name: Lint and test
+name: Publish to crates.io
 on:
   push:
     branches:
       - main
 
 jobs:
-  test:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
