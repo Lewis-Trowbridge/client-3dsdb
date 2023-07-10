@@ -1,6 +1,6 @@
 [package]
 name = "client-3dsdb"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "A Rust client for 3DS title DBs."
 repository = "https://github.com/Lewis-Trowbridge/client-3dsdb"
