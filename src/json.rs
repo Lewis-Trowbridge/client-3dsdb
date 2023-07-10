@@ -35,6 +35,7 @@ pub struct Release {
     publisher: String
 }
 
+/// Gets a vec of [Release]s from hax0kartik's repository.
 pub fn get_releases(region: Region) -> Vec<Release> {
     let request = ureq::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).call().unwrap();
     serde_json::from_reader(request.into_reader()).unwrap()
