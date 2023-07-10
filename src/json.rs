@@ -20,19 +20,19 @@ impl fmt::Display for Region {
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Release {
     #[serde(alias = "Name")]
-    name: String,
+    pub name: String,
     #[serde(alias = "UID")]
-    uid: String,
+    pub uid: String,
     #[serde(alias = "TitleID")]
-    title_id: String,
+    pub title_id: String,
     #[serde(alias = "Version")]
-    version: String,
+    pub version: String,
     #[serde(alias = "Size")]
-    size: String,
+    pub size: String,
     #[serde(alias = "Product Code")]
-    product_code: String,
+    pub product_code: String,
     #[serde(alias = "Publisher")]
-    publisher: String
+    pub publisher: String
 }
 
 /// Gets a vec of [Release]s from hax0kartik's repository.

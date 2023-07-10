@@ -8,28 +8,28 @@ struct Releases {
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Release {
-    id: String,
-    name: String,
-    publisher: String,
-    region: String,
-    languages: String,
-    group: String,
+    pub id: String,
+    pub name: String,
+    pub publisher: String,
+    pub region: String,
+    pub languages: String,
+    pub group: String,
     #[serde(alias = "imagesize")]
-    image_size: u64,
-    serial: String,
+    pub image_size: u64,
+    pub serial: String,
     #[serde(alias = "titleid")]
-    title_id: String,
+    pub title_id: String,
     #[serde(alias = "imgcrc")]
-    img_crc: String,
-    filename: String,
+    pub img_crc: String,
+    pub filename: String,
     #[serde(alias = "releasename")]
-    release_name: String,
+    pub release_name: String,
     #[serde(alias = "trimmedsize")]
-    trimmed_size: u64,
-    firmware: String,
+    pub trimmed_size: u64,
+    pub firmware: String,
     #[serde(alias = "type")]
-    _type: String,
-    card: String,
+    pub _type: String,
+    pub card: String,
 }
 
 /// Gets a vec of [Release] structs from 3dsdb.com.
