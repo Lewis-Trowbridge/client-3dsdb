@@ -32,6 +32,7 @@ pub struct Release {
     card: String,
 }
 
+/// Gets a vec of [Release] structs from 3dsdb.com.
 pub fn get_releases() -> Vec<Release> {
     let request = ureq::get("http://3dsdb.com/xml.php").call().unwrap();
     let release: Releases = serde_xml_rs::from_reader(request.into_reader()).unwrap();
