@@ -1,20 +1,16 @@
 use std::fmt;
 use std::fmt::Formatter;
 use serde::Deserialize;
+use strum_macros::{Display, EnumIter};
+use strum::IntoEnumIterator;
 
-#[derive(Debug)]
+#[derive(Display, Debug, EnumIter)]
 pub enum Region {
     GB,
     JP,
     KR,
     TW,
     US
-}
-
-impl fmt::Display for Region {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
@@ -37,8 +33,8 @@ pub struct Release {
 
 /// Gets a vec of [Release]s from hax0kartik's repository.
 pub fn get_releases(region: Region) -> Vec<Release> {
-    let request = ureq::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).call().unwrap();
-    serde_json::from_reader(request.into_reader()).unwrap()
+    let request = reqwest::blocking::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).unwrap();
+    request.json().unwrap()
 }
 
 #[cfg(test)]
