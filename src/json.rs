@@ -37,13 +37,17 @@ struct Release {
 
 #[cfg(test)]
 mod tests {
+    use rstest::*;
     use crate::json::Region;
 
-    #[test]
-    fn region_to_string_outputs_correct_string() {
-        let expected = "GB".to_string();
-        let actual_enum = Region::GB;
-        let actual = actual_enum.to_string();
+    #[rstest]
+    #[case(Region::GB, "GB")]
+    #[case(Region::JP, "JP")]
+    #[case(Region::KR, "KR")]
+    #[case(Region::TW, "TW")]
+    #[case(Region::US, "US")]
+    fn region_to_string_outputs_correct_string(#[case] region: Region, #[case] expected: String) {
+        let actual = region.to_string();
         assert_eq!(actual, expected)
     }
 }
