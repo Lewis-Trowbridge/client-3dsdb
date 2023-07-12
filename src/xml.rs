@@ -1,3 +1,18 @@
+//! Accesses <http://3dsdb.com> to get 3DS title data.
+//!
+//! This module uses data from an XML file published on 3dsdb.com. There are two methods to
+//! access these being [get_releases] and [get_releases_async], which are equivalent bar the async
+//! usage.
+//!
+//! ```
+//! use client_3dsdb::xml::get_releases;
+//! let releases = get_releases();
+//!
+//! for release in releases {
+//!     println!("{}", release.name);
+//! }
+//! ```
+//!
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -6,6 +21,7 @@ struct Releases {
     releases: Vec<Release>
 }
 
+/// A 3DS title.
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Release {
     pub id: String,
@@ -32,14 +48,14 @@ pub struct Release {
     pub card: String,
 }
 
-/// Gets a vec of [Release] structs from 3dsdb.com.
+/// Gets of [Release]s asynchronously.
 pub async fn get_releases_async() -> Vec<Release> {
     let request = reqwest::get("http://3dsdb.com/xml.php").await.unwrap();
     let release: Releases = serde_xml_rs::from_str(&request.text().await.unwrap()).unwrap();
     release.releases
 }
 
-/// Gets a vec of [Release] structs from 3dsdb.com.
+/// Gets [Release]s synchronously.
 pub fn get_releases() -> Vec<Release> {
     let request = reqwest::blocking::get("http://3dsdb.com/xml.php").unwrap();
     let release: Releases = serde_xml_rs::from_str(&request.text().unwrap()).unwrap();

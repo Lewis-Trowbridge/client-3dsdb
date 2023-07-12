@@ -25,3 +25,6 @@ once_cell = "1.18.0"
 [features]
 xml = ["dep:serde-xml-rs"]
 json = ["dep:serde_json", "dep:strum", "dep:strum_macros"]
+
+[package.metadata.docs.rs]
+all-features = true

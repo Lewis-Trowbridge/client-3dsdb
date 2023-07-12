@@ -1,8 +1,26 @@
+//! Accesses <https://github.com/hax0kartik/3dsdb> to get 3DS title data.
+//!
+//! This module uses data from a set of JSON files published by hax0kartik. A quirk of this dataset
+//! is that these are divided by region. These can be accessed individually using the [Region] enum
+//! with [get_releases] and [get_releases_async], or alternatively can all be accessed using
+//! [get_all_releases], which is the recommended approach.
+//!
+//! ```
+//! use client_3dsdb::json::get_all_releases;
+//!
+//! let releases = get_all_releases().await;
+//!
+//! for release in releases {
+//!     println!("{}", release.name);
+//! }
+//! ```
+
 use futures::future::join_all;
 use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
 
+/// A title region. Required to access region-specific title lists.
 #[derive(Display, Debug, EnumIter)]
 pub enum Region {
     GB,
@@ -12,6 +30,7 @@ pub enum Region {
     US
 }
 
+/// A 3DS title.
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct Release {
     #[serde(alias = "Name")]
@@ -30,18 +49,20 @@ pub struct Release {
     pub publisher: String
 }
 
+/// Gets [Release]s asynchronously for all regions
 pub async fn get_all_releases() -> Vec<Release> {
     let release_futures = Region::iter().map(|region| get_releases_async(region));
     let releases = join_all(release_futures).await;
     releases.into_iter().flatten().collect()
 }
 
+/// Gets [Release]s asynchronously for a given region.
 pub async fn get_releases_async(region: Region) -> Vec<Release> {
     let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await.unwrap();
     request.json().await.unwrap()
 }
 
-/// Gets a vec of [Release]s from hax0kartik's repository.
+/// Gets [Release]s synchronously for a given region.
 pub fn get_releases(region: Region) -> Vec<Release> {
     let request = reqwest::blocking::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).unwrap();
     request.json().unwrap()
