@@ -1,3 +1,4 @@
+use futures::future::join_all;
 use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
@@ -29,6 +30,12 @@ pub struct Release {
     pub publisher: String
 }
 
+pub async fn get_all_releases() -> Vec<Release> {
+    let release_futures = Region::iter().map(|region| get_releases_async(region));
+    let releases = join_all(release_futures).await;
+    releases.into_iter().flatten().collect()
+}
+
 pub async fn get_releases_async(region: Region) -> Vec<Release> {
     let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await.unwrap();
     request.json().await.unwrap()
@@ -42,8 +49,10 @@ pub fn get_releases(region: Region) -> Vec<Release> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+    use once_cell::sync::Lazy;
     use rstest::*;
-    use crate::json::{get_releases, get_releases_async, Region, Release};
+    use crate::json::{get_all_releases, get_releases, get_releases_async, Region, Release};
 
     #[rstest]
     #[case(Region::GB, "GB")]
@@ -56,35 +65,34 @@ mod tests {
         assert_eq!(actual, expected)
     }
 
+    static EXPECTED_RELEASE: Lazy<Release> = Lazy::new(|| Release {
+        name: "Shovel Software Insurance Claim".to_string(),
+        uid: "50010000049535".to_string(),
+        title_id: "000400000F715C00".to_string(),
+        version: "N/A".to_string(),
+        size: "25.7 MB [206 blocks]".to_string(),
+        product_code: "KTR-N-CF6P".to_string(),
+        publisher: "Batafurai".to_string()
+    });
+
+    #[rstest]
+    async fn get_all_releases_returns_valid_information() {
+        let releases = get_all_releases().await;
+        let actual = releases.get(0).unwrap();
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
+    }
+
     #[rstest]
     fn get_releases_returns_valid_information() {
-        let expected = Release{
-            name: "Shovel Software Insurance Claim".to_string(),
-            uid: "50010000049535".to_string(),
-            title_id: "000400000F715C00".to_string(),
-            version: "N/A".to_string(),
-            size: "25.7 MB [206 blocks]".to_string(),
-            product_code: "KTR-N-CF6P".to_string(),
-            publisher: "Batafurai".to_string()
-        };
         let releases = get_releases(Region::GB);
         let actual = releases.get(0).unwrap();
-        assert_eq!(actual, &expected)
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 
     #[rstest]
     async fn get_releases_async_returns_valid_information() {
-        let expected = Release{
-            name: "Shovel Software Insurance Claim".to_string(),
-            uid: "50010000049535".to_string(),
-            title_id: "000400000F715C00".to_string(),
-            version: "N/A".to_string(),
-            size: "25.7 MB [206 blocks]".to_string(),
-            product_code: "KTR-N-CF6P".to_string(),
-            publisher: "Batafurai".to_string()
-        };
         let releases = get_releases_async(Region::GB).await;
         let actual = releases.get(0).unwrap();
-        assert_eq!(actual, &expected)
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 }

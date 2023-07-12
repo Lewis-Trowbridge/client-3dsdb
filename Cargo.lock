@@ -222,6 +222,8 @@ name = "client-3dsdb"
 version = "0.2.1"
 dependencies = [
  "async-std",
+ "futures",
+ "once_cell",
  "reqwest",
  "rstest",
  "serde",
