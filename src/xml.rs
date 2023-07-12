@@ -6,11 +6,15 @@
 //!
 //! ```
 //! use client_3dsdb::xml::get_releases;
-//! let releases = get_releases();
 //!
-//! for release in releases {
-//!     println!("{}", release.name);
+//! fn print_releases() {
+//!     let releases = get_releases();
+//!
+//!     for release in releases {
+//!         println!("{}", release.name);
+//!     }
 //! }
+//!
 //! ```
 //!
 use serde::Deserialize;

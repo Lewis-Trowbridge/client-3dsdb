@@ -8,11 +8,14 @@
 //! ```
 //! use client_3dsdb::json::get_all_releases;
 //!
-//! let releases = get_all_releases().await;
+//! async fn print_releases() {
+//!     let releases = get_all_releases().await;
 //!
-//! for release in releases {
-//!     println!("{}", release.name);
+//!     for release in releases {
+//!         println!("{}", release.name);
+//!     }
 //! }
+
 //! ```
 
 use futures::future::join_all;
