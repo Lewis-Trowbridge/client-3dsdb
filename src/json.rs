@@ -15,13 +15,26 @@
 //!         println!("{}", release.name);
 //!     }
 //! }
-
 //! ```
+//!
+//! If you know the title ID ahead of time, you can get a [HashMap] for lookups by title ID using
+//! [get_releases_map].
+//!
+//! ```
+//! use client_3dsdb::json::{get_releases_map, Region};
+//!
+//! let releases = get_releases_map(Region::GB);
+//! let a_great_game = releases.get("0004000000030200").unwrap();
+//! assert_eq!(a_great_game.name, "Kid Icarus™: Uprising")
+//! ```
+//!
 
+use std::collections::HashMap;
 use futures::future::join_all;
 use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
+use rayon::prelude::*;
 
 /// A title region. Required to access region-specific title lists.
 #[derive(Display, Debug, EnumIter)]
@@ -56,7 +69,7 @@ pub struct Release {
 pub async fn get_all_releases() -> Vec<Release> {
     let release_futures = Region::iter().map(|region| get_releases_async(region));
     let releases = join_all(release_futures).await;
-    releases.into_iter().flatten().collect()
+    releases.into_par_iter().flatten().collect()
 }
 
 /// Gets [Release]s asynchronously for a given region.
@@ -71,12 +84,28 @@ pub fn get_releases(region: Region) -> Vec<Release> {
     request.json().unwrap()
 }
 
+/// Gets a hash map of [Release]s with title IDs as the key.
+///
+/// ```
+/// use client_3dsdb::json::{get_releases_map, Region};
+///
+/// let releases = get_releases_map(Region::GB);
+/// let a_great_game = releases.get("0004000000030200").unwrap();
+/// assert_eq!(a_great_game.name, "Kid Icarus™: Uprising")
+/// ```
+pub fn get_releases_map(region: Region) -> HashMap<String, Release> {
+    get_releases(region)
+        .into_par_iter()
+        .map(|release| (release.title_id.clone(), release))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use std::ops::Deref;
     use once_cell::sync::Lazy;
     use rstest::*;
-    use crate::json::{get_all_releases, get_releases, get_releases_async, Region, Release};
+    use crate::json::{get_all_releases, get_releases, get_releases_async, get_releases_map, Region, Release};
 
     #[rstest]
     #[case(Region::GB, "GB")]
@@ -117,6 +146,13 @@ mod tests {
     async fn get_releases_async_returns_valid_information() {
         let releases = get_releases_async(Region::GB).await;
         let actual = releases.get(0).unwrap();
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
+    }
+
+    #[rstest]
+    fn get_releases_map_returns_valid_information() {
+        let releases = get_releases_map(Region::GB);
+        let actual = releases.get(&EXPECTED_RELEASE.title_id).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 }

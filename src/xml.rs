@@ -17,7 +17,20 @@
 //!
 //! ```
 //!
+//! If you know the title ID ahead of time, you can get a [HashMap] using [get_releases_map].
+//!
+//! ```
+//! use client_3dsdb::xml::get_releases_map;
+//!
+//! let releases = get_releases_map();
+//! let a_great_game = releases.get("0004000000030200").unwrap();
+//! assert_eq!(a_great_game.name, "Kid Icarus: Uprising")
+//! ```
+//!
+
+use std::collections::HashMap;
 use serde::Deserialize;
+use rayon::prelude::*;
 
 #[derive(Deserialize)]
 struct Releases {
@@ -66,58 +79,66 @@ pub fn get_releases() -> Vec<Release> {
     release.releases
 }
 
+/// Gets a hash map of [Release]s with title IDs as the key.
+///
+/// ```
+/// use client_3dsdb::xml::get_releases_map;
+///
+/// let releases = get_releases_map();
+/// let a_great_game = releases.get("0004000000030200").unwrap();
+/// assert_eq!(a_great_game.name, "Kid Icarus: Uprising")
+/// ```
+pub fn get_releases_map() -> HashMap<String, Release> {
+    get_releases()
+        .into_par_iter()
+        .map(|release| (release.title_id.clone(), release))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+    use once_cell::sync::Lazy;
     use rstest::rstest;
     use super::*;
 
+    static EXPECTED_RELEASE: Lazy<Release> = Lazy::new(|| Release {
+        id: "1".to_string(),
+        name: "Tom Clancys Ghost Recon: Shadow Wars".to_string(),
+        publisher: "Ubisoft".to_string(),
+        region: "EUR".to_string(),
+        languages: "en,fr,de,it,es".to_string(),
+        group: "Legacy".to_string(),
+        image_size: 2048,
+        serial: "CTR-AGRP".to_string(),
+        title_id: "0004000000037500".to_string(),
+        img_crc: "5BD0B123".to_string(),
+        filename: "lgc-grsw".to_string(),
+        release_name: "Tom_Clancys_Ghost_Recon_Shadow_Wars_EUR_3DS-LGC".to_string(),
+        trimmed_size: 229750272,
+        firmware: "1.0.0E".to_string(),
+        _type: "1".to_string(),
+        card: "1".to_string()
+    });
+
     #[rstest]
     fn get_releases_gets_valid_information() {
-        let expected = Release {
-            id: "1".to_string(),
-            name: "Tom Clancys Ghost Recon: Shadow Wars".to_string(),
-            publisher: "Ubisoft".to_string(),
-            region: "EUR".to_string(),
-            languages: "en,fr,de,it,es".to_string(),
-            group: "Legacy".to_string(),
-            image_size: 2048,
-            serial: "CTR-AGRP".to_string(),
-            title_id: "0004000000037500".to_string(),
-            img_crc: "5BD0B123".to_string(),
-            filename: "lgc-grsw".to_string(),
-            release_name: "Tom_Clancys_Ghost_Recon_Shadow_Wars_EUR_3DS-LGC".to_string(),
-            trimmed_size: 229750272,
-            firmware: "1.0.0E".to_string(),
-            _type: "1".to_string(),
-            card: "1".to_string()
-        };
         let value = get_releases();
         let actual = value.get(0).unwrap();
-        assert_eq!(actual, &expected)
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 
     #[rstest]
     async fn get_releases_async_gets_valid_information() {
-        let expected = Release {
-            id: "1".to_string(),
-            name: "Tom Clancys Ghost Recon: Shadow Wars".to_string(),
-            publisher: "Ubisoft".to_string(),
-            region: "EUR".to_string(),
-            languages: "en,fr,de,it,es".to_string(),
-            group: "Legacy".to_string(),
-            image_size: 2048,
-            serial: "CTR-AGRP".to_string(),
-            title_id: "0004000000037500".to_string(),
-            img_crc: "5BD0B123".to_string(),
-            filename: "lgc-grsw".to_string(),
-            release_name: "Tom_Clancys_Ghost_Recon_Shadow_Wars_EUR_3DS-LGC".to_string(),
-            trimmed_size: 229750272,
-            firmware: "1.0.0E".to_string(),
-            _type: "1".to_string(),
-            card: "1".to_string()
-        };
         let value = get_releases_async().await;
         let actual = value.get(0).unwrap();
-        assert_eq!(actual, &expected)
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
+    }
+
+    #[rstest]
+    fn get_releases_map_gets_valid_information() {
+        let releases_map = get_releases_map();
+        let actual = releases_map.get(&EXPECTED_RELEASE.title_id).unwrap();
+        assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 }
