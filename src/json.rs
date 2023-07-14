@@ -9,7 +9,7 @@
 //! use client_3dsdb::json::get_all_releases;
 //!
 //! async fn print_releases() {
-//!     let releases = get_all_releases().await;
+//!     let releases = get_all_releases().await.unwrap();
 //!
 //!     for release in releases {
 //!         println!("{}", release.name);
@@ -23,7 +23,7 @@
 //! ```
 //! use client_3dsdb::json::{get_releases_map, Region};
 //!
-//! let releases = get_releases_map(Region::GB);
+//! let releases = get_releases_map(Region::GB).unwrap();
 //! let a_great_game = releases.get("0004000000030200").unwrap();
 //! assert_eq!(a_great_game.name, "Kid Icarus™: Uprising")
 //! ```
@@ -31,10 +31,12 @@
 
 use std::collections::HashMap;
 use futures::future::join_all;
+use itertools::Itertools;
 use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
 use rayon::prelude::*;
+use crate::error::Error;
 
 /// A title region. Required to access region-specific title lists.
 #[derive(Display, Debug, EnumIter)]
@@ -66,22 +68,28 @@ pub struct Release {
 }
 
 /// Gets [Release]s asynchronously for all regions
-pub async fn get_all_releases() -> Vec<Release> {
+pub async fn get_all_releases() -> Result<Vec<Release>, Error> {
     let release_futures = Region::iter().map(|region| get_releases_async(region));
     let releases = join_all(release_futures).await;
-    releases.into_par_iter().flatten().collect()
+    releases.into_iter().flatten_ok().collect()
 }
 
 /// Gets [Release]s asynchronously for a given region.
-pub async fn get_releases_async(region: Region) -> Vec<Release> {
-    let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await.unwrap();
-    request.json().await.unwrap()
+pub async fn get_releases_async(region: Region) -> Result<Vec<Release>, Error> {
+    let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await?;
+    match request.json().await {
+        Ok(releases) => Ok(releases),
+        Err(error) => Err(Error::from(error))
+    }
 }
 
 /// Gets [Release]s synchronously for a given region.
-pub fn get_releases(region: Region) -> Vec<Release> {
-    let request = reqwest::blocking::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).unwrap();
-    request.json().unwrap()
+pub fn get_releases(region: Region) -> Result<Vec<Release>, Error> {
+    let request = reqwest::blocking::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region))?;
+    match request.json() {
+        Ok(releases) => Ok(releases),
+        Err(error) => Err(Error::from(error))
+    }
 }
 
 /// Gets a hash map of [Release]s with title IDs as the key.
@@ -89,15 +97,15 @@ pub fn get_releases(region: Region) -> Vec<Release> {
 /// ```
 /// use client_3dsdb::json::{get_releases_map, Region};
 ///
-/// let releases = get_releases_map(Region::GB);
+/// let releases = get_releases_map(Region::GB).unwrap();
 /// let a_great_game = releases.get("0004000000030200").unwrap();
 /// assert_eq!(a_great_game.name, "Kid Icarus™: Uprising")
 /// ```
-pub fn get_releases_map(region: Region) -> HashMap<String, Release> {
-    get_releases(region)
-        .into_par_iter()
+pub fn get_releases_map(region: Region) -> Result<HashMap<String, Release>, Error> {
+    let releases = get_releases(region)?;
+    Ok(releases.into_par_iter()
         .map(|release| (release.title_id.clone(), release))
-        .collect()
+        .collect())
 }
 
 #[cfg(test)]
@@ -130,28 +138,28 @@ mod tests {
 
     #[rstest]
     async fn get_all_releases_returns_valid_information() {
-        let releases = get_all_releases().await;
+        let releases = get_all_releases().await.unwrap();
         let actual = releases.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 
     #[rstest]
     fn get_releases_returns_valid_information() {
-        let releases = get_releases(Region::GB);
+        let releases = get_releases(Region::GB).unwrap();
         let actual = releases.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 
     #[rstest]
     async fn get_releases_async_returns_valid_information() {
-        let releases = get_releases_async(Region::GB).await;
+        let releases = get_releases_async(Region::GB).await.unwrap();
         let actual = releases.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
 
     #[rstest]
     fn get_releases_map_returns_valid_information() {
-        let releases = get_releases_map(Region::GB);
+        let releases = get_releases_map(Region::GB).unwrap();
         let actual = releases.get(&EXPECTED_RELEASE.title_id).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
