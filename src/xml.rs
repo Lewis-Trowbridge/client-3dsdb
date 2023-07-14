@@ -68,17 +68,17 @@ pub struct Release {
 }
 
 /// Gets of [Release]s asynchronously.
-pub async fn get_releases_async() -> Vec<Release> {
-    let request = reqwest::get("http://3dsdb.com/xml.php").await.unwrap();
-    let release: Releases = serde_xml_rs::from_str(&request.text().await.unwrap()).unwrap();
-    release.releases
+pub async fn get_releases_async() -> Result<Vec<Release>, Error> {
+    let response = reqwest::get("http://3dsdb.com/xml.php").await?;
+    let text = response.text().await?;
+    let release: Releases = serde_xml_rs::from_str(&text)?;
+    Ok(release.releases)
 }
 
 /// Gets [Release]s synchronously.
 pub fn get_releases() -> Result<Vec<Release>, Error> {
-    let request = reqwest::blocking::get("http://3dsdb.com/xml.php")?;
-    let text = request.text()?;
-    let release: Releases = serde_xml_rs::from_str(&text)?;
+    let response = reqwest::blocking::get("http://3dsdb.com/xml.php")?;
+    let release: Releases = serde_xml_rs::from_reader(response)?;
     Ok(release.releases)
 
 }
@@ -140,7 +140,7 @@ mod tests {
 
     #[rstest]
     async fn get_releases_async_gets_valid_information() {
-        let value = get_releases_async().await;
+        let value = get_releases_async().await.unwrap();
         let actual = value.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
