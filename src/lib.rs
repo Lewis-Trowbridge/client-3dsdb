@@ -7,6 +7,8 @@
 //! - xml: <http://3dsdb.com>
 //! - json: <https://github.com/hax0kartik/3dsdb>
 
+pub mod error;
+
 #[cfg(feature = "xml")]
 pub mod xml;
 #[cfg(feature = "json")]

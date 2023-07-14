@@ -35,7 +35,7 @@ use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
 use rayon::prelude::*;
-use reqwest::Error;
+use crate::error::Error;
 
 /// A title region. Required to access region-specific title lists.
 #[derive(Display, Debug, EnumIter)]
@@ -82,7 +82,10 @@ pub async fn get_releases_async(region: Region) -> Vec<Release> {
 /// Gets [Release]s synchronously for a given region.
 pub fn get_releases(region: Region) -> Result<Vec<Release>, Error> {
     let request = reqwest::blocking::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region))?;
-    request.json()
+    match request.json() {
+        Ok(releases) => Ok(releases),
+        Err(error) => Err(Error::from(error))
+    }
 }
 
 /// Gets a hash map of [Release]s with title IDs as the key.
