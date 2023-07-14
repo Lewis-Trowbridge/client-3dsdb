@@ -9,7 +9,7 @@
 //! use client_3dsdb::json::get_all_releases;
 //!
 //! async fn print_releases() {
-//!     let releases = get_all_releases().await;
+//!     let releases = get_all_releases().await.unwrap();
 //!
 //!     for release in releases {
 //!         println!("{}", release.name);
@@ -31,6 +31,7 @@
 
 use std::collections::HashMap;
 use futures::future::join_all;
+use itertools::Itertools;
 use serde::Deserialize;
 use strum_macros::{Display, EnumIter};
 use strum::IntoEnumIterator;
@@ -67,16 +68,19 @@ pub struct Release {
 }
 
 /// Gets [Release]s asynchronously for all regions
-pub async fn get_all_releases() -> Vec<Release> {
+pub async fn get_all_releases() -> Result<Vec<Release>, Error> {
     let release_futures = Region::iter().map(|region| get_releases_async(region));
     let releases = join_all(release_futures).await;
-    releases.into_par_iter().flatten().collect()
+    releases.into_iter().flatten_ok().collect()
 }
 
 /// Gets [Release]s asynchronously for a given region.
-pub async fn get_releases_async(region: Region) -> Vec<Release> {
-    let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await.unwrap();
-    request.json().await.unwrap()
+pub async fn get_releases_async(region: Region) -> Result<Vec<Release>, Error> {
+    let request = reqwest::get(&format!("https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_{}.json", region)).await?;
+    match request.json().await {
+        Ok(releases) => Ok(releases),
+        Err(error) => Err(Error::from(error))
+    }
 }
 
 /// Gets [Release]s synchronously for a given region.
@@ -99,7 +103,7 @@ pub fn get_releases(region: Region) -> Result<Vec<Release>, Error> {
 /// ```
 pub fn get_releases_map(region: Region) -> Result<HashMap<String, Release>, Error> {
     let releases = get_releases(region)?;
-    Ok(releases.into_iter()
+    Ok(releases.into_par_iter()
         .map(|release| (release.title_id.clone(), release))
         .collect())
 }
@@ -134,7 +138,7 @@ mod tests {
 
     #[rstest]
     async fn get_all_releases_returns_valid_information() {
-        let releases = get_all_releases().await;
+        let releases = get_all_releases().await.unwrap();
         let actual = releases.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
@@ -148,7 +152,7 @@ mod tests {
 
     #[rstest]
     async fn get_releases_async_returns_valid_information() {
-        let releases = get_releases_async(Region::GB).await;
+        let releases = get_releases_async(Region::GB).await.unwrap();
         let actual = releases.get(0).unwrap();
         assert_eq!(actual, EXPECTED_RELEASE.deref())
     }
