@@ -101,7 +101,7 @@ pub fn get_releases_map() -> Result<HashMap<String, Release>, Error> {
 
 impl From<serde_xml_rs::Error> for Error {
     fn from(value: serde_xml_rs::Error) -> Self {
-        Error { message: format!("{:?}", value) }
+        Error { message: format!("{}", value) }
     }
 }
 

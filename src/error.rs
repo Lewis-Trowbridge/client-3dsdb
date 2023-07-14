@@ -1,8 +1,16 @@
+//! Custom errors.
+//!
+//! A small module that contains a custom error struct used to encapsulate errors from lower down in
+//! the function call chain.
+//!
+
+
 use std::fmt::{Display, Formatter};
 
+/// A custom error struct. Contains the string representation for the encapsulated error.
 #[derive(Debug, Clone)]
 pub struct Error {
-    pub(crate) message: String
+    pub message: String
 }
 
 impl Display for Error {
